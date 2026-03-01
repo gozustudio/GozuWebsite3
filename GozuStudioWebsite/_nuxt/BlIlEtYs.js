@@ -1,0 +1,1 @@
+import{ah as r,K as n,a9 as u,h as c,a1 as f}from"./DeI2bvQM.js";const d=e=>{const a=r();n(()=>{const t=u();if(a.animate){e();return}const s=c(!1);f(()=>a.animate,o=>{o&&!s.value&&t.run(()=>{e(),s.value=!0})})})};export{d as u};

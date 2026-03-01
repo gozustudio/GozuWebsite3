@@ -1,0 +1,192 @@
+.footer .gozu-logo-inline {
+  display: flex !important;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: 11.5rem;
+  height: 3.35rem;
+  margin-bottom: 3.75rem;
+  margin-left: 0 !important;
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: contain;
+  color: #fff;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.footer .gozu-logo-inline svg {
+  display: block !important;
+  width: auto !important;
+  max-width: 100%;
+  height: 100% !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.footer .network-link {
+  align-items: center;
+  color: #fff;
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.footer .gozu-network-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  min-width: 1.25rem;
+  min-height: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.footer .gozu-network-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.footer .gozu-network-icon svg path {
+  fill: currentColor !important;
+}
+
+.footer .networks-list {
+  align-items: center;
+}
+
+.footer .network-item {
+  display: flex;
+  align-items: center;
+}
+
+.footer .gozu-proof .gartner-logo {
+  display: none !important;
+}
+
+.footer .gozu-proof .gartner-text,
+.footer .gozu-proof .gozu-proof-text {
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.45;
+  margin: 0;
+  max-width: 16rem;
+}
+
+.footer .credits .rejouice {
+  display: none !important;
+}
+
+.footer .credits .gozu-credit-text {
+  color: rgba(255, 255, 255, 0.8);
+  font-family: var(--font-suisse, "SuisseIntl", sans-serif);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.big-image-content .image-wrapper img[data-gozu-review="1"],
+img[data-gozu-review="1"] {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+@media (max-width: 1023px) {
+  .footer .gozu-logo-inline {
+    width: 9rem;
+    height: 2.625rem;
+    margin-bottom: 2.5rem;
+  }
+}
+
+.big-image-content[data-gozu-review-fixed="1"] .image-wrapper,
+.big-image-content[data-gozu-review-fixed="1"] .image-wrapper * {
+  transition: none !important;
+  animation: none !important;
+}
+
+.big-image-content[data-gozu-review-fixed="1"] .quote-block {
+  z-index: 2;
+}
+
+.big-image-content[data-gozu-review-fixed="1"] .image-wrapper {
+  background-image: url('/static/images/Review.jpeg') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+}
+
+.big-image-content[data-gozu-review-fixed="1"] .image-wrapper .media-el {
+  opacity: 0 !important;
+}
+
+.big-image-content[data-gozu-review-fixed="1"] .image-wrapper {
+  position: relative !important;
+  isolation: isolate;
+}
+
+.big-image-content[data-gozu-review-fixed="1"] .image-wrapper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.34);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.big-image-content[data-gozu-review-fixed="1"] .quote-block {
+  z-index: 3 !important;
+}
+
+.big-image-content[data-gozu-review-fixed="1"] .quote-author .role {
+  color: rgba(20, 28, 28, 0.82) !important;
+}
+
+@media (min-width: 1024px) {
+  .features-steps .scroll-items,
+  .features-steps .scroll-items-list,
+  .features-steps .split__wrapper {
+    pointer-events: none !important;
+  }
+}
+
+/* Prevent blank/black hero if frame sequence fails on external previews */
+.video-carousel .sequence-background-wrapper {
+  background-color: #0f1217;
+  background-image: linear-gradient(135deg, rgba(20, 31, 36, 0.96), rgba(7, 12, 16, 0.92));
+}
+
+.video-carousel .video-sequence,
+.video-carousel .video-sequence-background {
+  background-color: transparent;
+}
+
+/* Hard fallback if loader gets stuck */
+.app-loader,
+.app-transition {
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+/* Light preview mode for temporary hosts: avoid heavy 987-frame hero sequence */
+.gozu-light-preview .video-carousel .video-sequence {
+  display: none !important;
+}
+
+.gozu-light-preview .video-carousel {
+  min-height: 68vh;
+  position: relative;
+}
+
+.gozu-light-preview .video-carousel .wrapper {
+  min-height: 68vh;
+  background: linear-gradient(135deg, rgba(17, 27, 31, 0.96), rgba(10, 15, 20, 0.92));
+}
+
+.gozu-light-preview .video-carousel .homepage-scroll-content {
+  position: relative;
+  z-index: 2;
+}
