@@ -1,0 +1,1 @@
+import{l as s}from"./D6QWonDo.js";import{a as r}from"./BkE_5mWp.js";async function i(e){const{public:{storyblokVersion:o}}=s();return await r(e,{version:o,resolve_relations:["FormReference.form","LinksList.sections","CaseStudyReference.case_study"]})}export{i as u};

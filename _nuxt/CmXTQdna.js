@@ -1,0 +1,1 @@
+import{ai as r,L as n,aa as u,g as c,a2 as f}from"./D6QWonDo.js";const d=e=>{const a=r();n(()=>{const t=u();if(a.animate){e();return}const s=c(!1);f(()=>a.animate,o=>{o&&!s.value&&t.run(()=>{e(),s.value=!0})})})};export{d as u};

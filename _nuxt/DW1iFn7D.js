@@ -1,0 +1,1 @@
+import{L as p,al as c,aq as r,aa as i}from"./D6QWonDo.js";const u=(...o)=>p(()=>{const t=c();let e;const s=(...a)=>{e&&e.stop(),e=i(),e.run(()=>{o[0](...a)})};t.add(s,o[1],o[2],!0),r(()=>{e.stop(),t.remove(s)})});export{u};
