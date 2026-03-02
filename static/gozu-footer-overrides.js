@@ -213,21 +213,22 @@
   function enableExternalLightPreviewMode() {
     var host = window.location.hostname || "";
     var isLocal = host === "127.0.0.1" || host === "localhost";
-    var isOptionPreviewDomain = /^option[0-9-]*\.gozustudio\.com$/i.test(host);
 
     if (isLocal) {
       return;
     }
+
+    var params = new URLSearchParams(window.location.search || "");
+    var forceLightPreview = params.get("lightPreview") === "1";
 
     var knownPreviewHost = host.endsWith(".netlify.app") ||
       host.endsWith(".vercel.app") ||
       host.endsWith(".pages.dev") ||
       host.endsWith(".trycloudflare.com") ||
       host.endsWith(".loca.lt") ||
-      host.endsWith(".lhr.life") ||
-      isOptionPreviewDomain;
+      host.endsWith(".lhr.life");
 
-    if (!knownPreviewHost) {
+    if (!knownPreviewHost && !forceLightPreview) {
       return;
     }
 
