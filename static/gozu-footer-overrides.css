@@ -154,15 +154,50 @@ img[data-gozu-review="1"] {
   }
 }
 
-/* Prevent blank/black hero if frame sequence fails on external previews */
-.video-carousel .sequence-background-wrapper {
-  background-color: #0f1217;
-  background-image: linear-gradient(135deg, rgba(20, 31, 36, 0.96), rgba(7, 12, 16, 0.92));
+/* Keep hero visible if frame sequence fails to boot */
+.video-carousel {
+  position: relative;
+}
+
+.video-carousel .wrapper {
+  min-height: 68vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.video-carousel .wrapper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(135deg, rgba(20, 31, 36, 0.88), rgba(7, 12, 16, 0.76)),
+    url('/static/frames/home/desktop/webp/hero_anim_desktop_60_0.webp');
+  background-size: cover, cover;
+  background-position: center center, center center;
+  background-repeat: no-repeat, no-repeat;
+  opacity: 0.95;
+  transition: opacity 0.35s ease;
+}
+
+@media (max-width: 1023px) {
+  .video-carousel .wrapper::before {
+    background-image:
+      linear-gradient(135deg, rgba(20, 31, 36, 0.88), rgba(7, 12, 16, 0.76)),
+      url('/static/frames/home/mobile/webp/hero_anim_mobile_60_0.webp');
+  }
+}
+
+.video-carousel.gozu-sequence-ready .wrapper::before {
+  opacity: 0;
 }
 
 .video-carousel .video-sequence,
-.video-carousel .video-sequence-background {
+.video-carousel .video-sequence-background,
+.video-carousel .homepage-scroll-content {
   background-color: transparent;
+  position: relative;
+  z-index: 1;
 }
 
 /* Hard fallback if loader gets stuck */
@@ -171,7 +206,7 @@ img[data-gozu-review="1"] {
   transition: opacity 0.25s ease, visibility 0.25s ease;
 }
 
-/* Light preview mode for temporary hosts: avoid heavy 987-frame hero sequence */
+/* Light preview mode for temporary hosts: avoid heavy 491-frame hero sequence */
 .gozu-light-preview .video-carousel .video-sequence {
   display: none !important;
 }

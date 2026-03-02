@@ -235,7 +235,22 @@
   function forceHideStuckLoader() {
     var loaderNodes = document.querySelectorAll(".app-loader, .app-transition");
     if (!loaderNodes.length) {
-      return;
+      return false;
+    }
+
+    var hasVisibleLoader = false;
+    loaderNodes.forEach(function (node) {
+      var styles = window.getComputedStyle(node);
+      var isVisible = styles.display !== "none" &&
+        styles.visibility !== "hidden" &&
+        parseFloat(styles.opacity || "1") > 0.05;
+      if (isVisible) {
+        hasVisibleLoader = true;
+      }
+    });
+
+    if (!hasVisibleLoader) {
+      return false;
     }
 
     loaderNodes.forEach(function (node) {
@@ -246,6 +261,59 @@
 
     document.documentElement.classList.remove("is-loading", "loading");
     document.body.classList.remove("is-loading", "loading");
+    return true;
+  }
+
+  function hasSequenceFrame(carousel) {
+    if (!carousel) {
+      return false;
+    }
+
+    var canvases = carousel.querySelectorAll(".video-sequence canvas");
+    for (var i = 0; i < canvases.length; i += 1) {
+      var canvas = canvases[i];
+      if (canvas && canvas.width > 0 && canvas.height > 0) {
+        return true;
+      }
+    }
+
+    var imgs = carousel.querySelectorAll(".video-sequence img");
+    for (var j = 0; j < imgs.length; j += 1) {
+      var img = imgs[j];
+      if (img && img.complete && img.naturalWidth > 16) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function ensureCarouselFallback() {
+    var carousels = document.querySelectorAll(".video-carousel");
+    if (!carousels.length) {
+      return;
+    }
+
+    carousels.forEach(function (carousel) {
+      var tries = 0;
+
+      function checkFrame() {
+        tries += 1;
+
+        if (hasSequenceFrame(carousel)) {
+          carousel.classList.add("gozu-sequence-ready");
+          return;
+        }
+
+        if (tries > 80) {
+          return;
+        }
+
+        window.setTimeout(checkFrame, 250);
+      }
+
+      checkFrame();
+    });
   }
 
   function isWithinFeaturesZone() {
@@ -332,15 +400,14 @@
     requestAnimationFrame(function () {
       queued = false;
       applyOverrides();
-      forceHideStuckLoader();
+      ensureCarouselFallback();
     });
   }
 
   enableExternalLightPreviewMode();
   document.addEventListener("DOMContentLoaded", queueApply);
   window.addEventListener("load", queueApply);
-  window.setTimeout(forceHideStuckLoader, 2500);
-  window.setTimeout(forceHideStuckLoader, 5000);
+  window.setTimeout(forceHideStuckLoader, 12000);
 
   var ticks = 0;
   var intervalId = setInterval(function () {
