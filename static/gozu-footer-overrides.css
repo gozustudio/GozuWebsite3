@@ -254,3 +254,20 @@ img[data-gozu-review="1"] {
   visibility: visible !important;
   transform: none !important;
 }
+
+/* Rescue mode: if hero sequence does not initialize, keep copy readable */
+.video-carousel.gozu-sequence-failed .homepage-scroll-content,
+.video-carousel.gozu-sequence-failed .content,
+.video-carousel.gozu-sequence-failed .title-sequence,
+.video-carousel.gozu-sequence-failed .title-sequence * {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+}
+
+.video-carousel.gozu-sequence-failed .title-sequence {
+  position: static !important;
+  display: block !important;
+  inset: auto !important;
+  text-shadow: 0 0.08rem 1rem rgba(8, 16, 22, 0.75);
+}

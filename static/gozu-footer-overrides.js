@@ -264,6 +264,7 @@
 
     document.documentElement.classList.remove("is-loading", "loading");
     document.body.classList.remove("is-loading", "loading");
+    unlockScrollState();
     return true;
   }
 
@@ -291,6 +292,30 @@
     return false;
   }
 
+  function hasVisibleHeroTitles(carousel) {
+    if (!carousel) {
+      return false;
+    }
+
+    var titles = carousel.querySelectorAll(".title-sequence");
+    if (!titles.length) {
+      return false;
+    }
+
+    for (var i = 0; i < titles.length; i += 1) {
+      var title = titles[i];
+      var styles = window.getComputedStyle(title);
+      var visible = styles.display !== "none" &&
+        styles.visibility !== "hidden" &&
+        parseFloat(styles.opacity || "1") > 0.08;
+      if (visible) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   function ensureCarouselFallback() {
     var carousels = document.querySelectorAll(".video-carousel");
     if (!carousels.length) {
@@ -298,6 +323,11 @@
     }
 
     carousels.forEach(function (carousel) {
+      if (carousel.getAttribute("data-gozu-sequence-watch") === "1") {
+        return;
+      }
+      carousel.setAttribute("data-gozu-sequence-watch", "1");
+
       var tries = 0;
 
       function checkFrame() {
@@ -305,10 +335,18 @@
 
         if (hasSequenceFrame(carousel)) {
           carousel.classList.add("gozu-sequence-ready");
+          carousel.classList.remove("gozu-sequence-failed");
+          carousel.setAttribute("data-gozu-sequence-watch", "done");
           return;
         }
 
+        if (tries > 10 && !hasVisibleHeroTitles(carousel)) {
+          carousel.classList.add("gozu-sequence-failed");
+        }
+
         if (tries > 80) {
+          carousel.classList.add("gozu-sequence-failed");
+          carousel.setAttribute("data-gozu-sequence-watch", "done");
           return;
         }
 
@@ -352,6 +390,24 @@
       ].forEach(function (className) {
         el.classList.remove(className);
       });
+    });
+  }
+
+  function ensureHeroTextVisible() {
+    var carousels = document.querySelectorAll(".video-carousel");
+    if (!carousels.length) {
+      return;
+    }
+
+    carousels.forEach(function (carousel) {
+      if (carousel.classList.contains("gozu-sequence-ready")) {
+        return;
+      }
+      if (hasVisibleHeroTitles(carousel)) {
+        return;
+      }
+
+      carousel.classList.add("gozu-sequence-failed");
     });
   }
 
@@ -404,25 +460,37 @@
       queued = false;
       applyOverrides();
       ensureCarouselFallback();
+      ensureHeroTextVisible();
     });
   }
 
   enableExternalLightPreviewMode();
   document.addEventListener("DOMContentLoaded", queueApply);
   window.addEventListener("load", queueApply);
+  window.setTimeout(forceHideStuckLoader, 6000);
   window.setTimeout(forceHideStuckLoader, 12000);
+  window.setTimeout(ensureHeroTextVisible, 2400);
+  window.setTimeout(ensureHeroTextVisible, 5200);
+  window.setTimeout(unlockScrollState, 5200);
 
   var ticks = 0;
   var intervalId = setInterval(function () {
     queueApply();
     ticks += 1;
-    if (ticks > 40) {
+    if (ticks > 18) {
       clearInterval(intervalId);
     }
-  }, 500);
+  }, 650);
 
-  var observer = new MutationObserver(queueApply);
-  observer.observe(document.documentElement, {
+  var observerTicks = 0;
+  var observer = new MutationObserver(function () {
+    observerTicks += 1;
+    queueApply();
+    if (observerTicks > 80) {
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.body || document.documentElement, {
     childList: true,
     subtree: true
   });
