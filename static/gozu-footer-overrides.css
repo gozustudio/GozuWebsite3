@@ -1,49 +1,27 @@
-.footer .gozu-logo-img-wrap {
-  display: flex !important;
+.footer .gozu-logo-inline {
   align-items: flex-start;
-  justify-content: flex-start;
-  width: 11.5rem;
+  color: #fff;
+  display: flex !important;
   height: 3.35rem;
+  justify-content: flex-start;
   margin-bottom: 3.75rem;
   margin-left: 0 !important;
+  width: 11.5rem;
 }
 
-.footer .gozu-logo-img-wrap svg,
-.footer .gozu-logo-img-wrap img {
+.footer .gozu-logo-inline svg,
+.footer .gozu-logo-inline img {
   display: block !important;
-  width: auto !important;
-  max-width: 100%;
   height: 100% !important;
-  opacity: 1 !important;
-  visibility: visible !important;
+  max-width: 100%;
+  width: auto !important;
 }
 
-.footer .gozu-network-icon {
-  width: 1.25rem;
-  height: 1.25rem;
-  min-width: 1.25rem;
-  min-height: 1.25rem;
-  display: inline-block;
-  object-fit: contain;
-}
-
-.footer .network-link {
-  align-items: center;
-  color: #fff;
-  display: inline-flex;
-  gap: 0.5rem;
-}
-
-.footer .network-item {
-  display: flex;
-  align-items: center;
-}
-
-.footer .gozu-proof .gartner-logo,
-.footer .gozu-proof .gartner-text {
+.footer .gozu-proof .gartner-logo {
   display: none !important;
 }
 
+.footer .gozu-proof .gartner-text,
 .footer .gozu-proof .gozu-proof-text {
   color: #fff;
   font-size: 0.8125rem;
@@ -53,6 +31,42 @@
   max-width: 16rem;
 }
 
+.footer .network-link {
+  align-items: center;
+  color: #fff;
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.footer .gozu-network-icon {
+  align-items: center;
+  display: inline-flex;
+  height: 1.25rem;
+  justify-content: center;
+  min-height: 1.25rem;
+  min-width: 1.25rem;
+  width: 1.25rem;
+}
+
+.footer .gozu-network-icon img {
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
+.footer .networks-list {
+  align-items: center;
+}
+
+.footer .network-item {
+  display: flex;
+}
+
+.footer .credits .rejouice {
+  display: none !important;
+}
+
 .footer .credits .gozu-credit-text {
   color: rgba(255, 255, 255, 0.8);
   font-family: var(--font-suisse, "SuisseIntl", sans-serif);
@@ -60,53 +74,36 @@
   line-height: 1;
 }
 
-.big-image-content[data-gozu-review-fixed="1"] .image-wrapper,
-.big-image-content[data-gozu-review-fixed="1"] .image-wrapper * {
-  transition: none !important;
-  animation: none !important;
-}
-
 .big-image-content[data-gozu-review-fixed="1"] .image-wrapper {
-  position: relative !important;
-  isolation: isolate;
   background-image: url('/static/images/Review.jpeg') !important;
-  background-size: cover !important;
   background-position: center center !important;
   background-repeat: no-repeat !important;
+  background-size: cover !important;
+  isolation: isolate;
+  position: relative !important;
+}
+
+.big-image-content[data-gozu-review-fixed="1"] .image-wrapper .media-el {
+  opacity: 0 !important;
 }
 
 .big-image-content[data-gozu-review-fixed="1"] .image-wrapper::after {
-  content: "";
-  position: absolute;
-  inset: 0;
   background: rgba(0, 0, 0, 0.34);
-  z-index: 1;
+  content: "";
+  inset: 0;
   pointer-events: none;
-}
-
-.big-image-content[data-gozu-review-fixed="1"] .image-wrapper img[data-gozu-review] {
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  object-position: center center !important;
-  opacity: 1 !important;
-  visibility: visible !important;
+  position: absolute;
+  z-index: 1;
 }
 
 .big-image-content[data-gozu-review-fixed="1"] .quote-block {
   z-index: 3 !important;
 }
 
-.big-image-content[data-gozu-review-fixed="1"] .quote-author .role,
-.big-image-content[data-gozu-review-fixed="1"] .author-info .role {
-  color: rgba(20, 28, 28, 0.88) !important;
-}
-
 @media (max-width: 1023px) {
-  .footer .gozu-logo-img-wrap {
-    width: 9rem;
+  .footer .gozu-logo-inline {
     height: 2.625rem;
     margin-bottom: 2.5rem;
+    width: 9rem;
   }
 }

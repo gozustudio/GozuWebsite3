@@ -1,87 +1,89 @@
-(() => {
-  if (window.__gozuFooterOverridesLoaded) return;
-  window.__gozuFooterOverridesLoaded = true;
-
+(function () {
   const CONTACT_EMAIL = "info@gozustudio.com";
   const PHONE = "+44 07765 577275";
   const LOGO_SVG_PATH = "/static/images/gozustudio-logo.svg";
   const REVIEW_IMAGE_PATH = "/static/images/Review.jpeg";
 
-  const SOCIALS = [
+  const networks = [
     { label: "Telegram", href: "https://t.me/+447765577275", icon: "/static/images/telegram.svg" },
     { label: "Instagram", href: "https://www.instagram.com/gozustudio/", icon: "/static/images/instagram.svg" },
     { label: "WhatsApp", href: "https://wa.me/447765577275", icon: "/static/images/whatsapp.svg" }
   ];
 
-  let cachedLogoSvg = "";
-  let logoPromise = null;
-  let applyTimer = null;
+  let cachedLogoSVG = "";
+  let logoFetchPromise = null;
 
-  function loadLogoSvg() {
-    if (cachedLogoSvg) return Promise.resolve(cachedLogoSvg);
-    if (logoPromise) return logoPromise;
+  function loadLogoSVG() {
+    if (cachedLogoSVG) return Promise.resolve(cachedLogoSVG);
+    if (logoFetchPromise) return logoFetchPromise;
 
-    logoPromise = fetch(LOGO_SVG_PATH)
-      .then((res) => (res.ok ? res.text() : ""))
-      .then((svg) => {
-        cachedLogoSvg = svg || "";
-        return cachedLogoSvg;
+    logoFetchPromise = fetch(LOGO_SVG_PATH, { cache: "force-cache" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("Failed to load logo SVG");
+        return res.text();
       })
-      .catch(() => "");
+      .then(function (svgText) {
+        cachedLogoSVG = svgText;
+        return cachedLogoSVG;
+      })
+      .catch(function () {
+        return "";
+      });
 
-    return logoPromise;
+    return logoFetchPromise;
   }
 
-  function replaceFooterLogo(footer) {
-    const logoSection = footer.querySelector(".logo-section");
+  function forceLogo(logoSection) {
     if (!logoSection) return;
 
-    logoSection.querySelectorAll(".terminal-logo, .gozu-logo-inline").forEach((el) => el.remove());
+    var oldTerminalLogo = logoSection.querySelector(".terminal-logo");
+    if (oldTerminalLogo) oldTerminalLogo.remove();
 
-    let wrap = logoSection.querySelector(".gozu-logo-img-wrap");
-    if (!wrap) {
-      wrap = document.createElement("div");
-      wrap.className = "gozu-logo-img-wrap";
-      logoSection.insertBefore(wrap, logoSection.firstChild);
+    var holder = logoSection.querySelector(".gozu-logo-inline");
+    if (!holder) {
+      holder = document.createElement("div");
+      holder.className = "gozu-logo-inline";
+      logoSection.insertBefore(holder, logoSection.firstChild);
     }
 
-    loadLogoSvg().then((svgText) => {
-      if (!wrap || !wrap.isConnected) return;
+    if (holder.getAttribute("data-gozu-ready") === "1") return;
 
+    loadLogoSVG().then(function (svgText) {
       if (svgText) {
-        wrap.innerHTML = svgText;
-        const svg = wrap.querySelector("svg");
+        holder.innerHTML = svgText;
+        var svg = holder.querySelector("svg");
         if (svg) {
           svg.setAttribute("preserveAspectRatio", "xMinYMid meet");
           svg.setAttribute("width", "100%");
           svg.setAttribute("height", "100%");
         }
       } else {
-        wrap.innerHTML = "";
-        const img = document.createElement("img");
+        holder.innerHTML = "";
+        var img = document.createElement("img");
         img.src = LOGO_SVG_PATH;
         img.alt = "Gozu Studio";
         img.loading = "eager";
-        wrap.appendChild(img);
+        holder.appendChild(img);
       }
+      holder.setAttribute("data-gozu-ready", "1");
     });
   }
 
   function patchFooter(footer) {
-    replaceFooterLogo(footer);
+    forceLogo(footer.querySelector(".logo-section"));
 
-    const gartner = footer.querySelector(".gartner-section");
-    if (gartner) {
+    var gartner = footer.querySelector(".gartner-section");
+    if (gartner && gartner.getAttribute("data-gozu-patched") !== "1") {
       gartner.classList.add("gozu-proof");
-      gartner.innerHTML =
-        '<p class="gozu-proof-text">Thoughtful architecture and interiors designed to improve how people live, work, and gather.</p>';
+      gartner.innerHTML = "<p class=\"gozu-proof-text\">Thoughtful architecture and interiors designed to improve how people live, work, and gather.</p>";
+      gartner.setAttribute("data-gozu-patched", "1");
     }
 
-    const labels = footer.querySelectorAll(".links-list .label span");
+    var labels = footer.querySelectorAll(".links-list .label span");
     if (labels[0]) labels[0].textContent = "Our Style";
     if (labels[1]) labels[1].textContent = "Company";
 
-    const contactLink = footer.querySelector(".contact-link");
+    var contactLink = footer.querySelector(".contact-link");
     if (contactLink) {
       contactLink.textContent = "Connect with our experts today.";
       contactLink.href = "mailto:" + CONTACT_EMAIL;
@@ -89,46 +91,53 @@
       contactLink.rel = "";
     }
 
-    const contactText = footer.querySelector(".contact-text");
+    var contactText = footer.querySelector(".contact-text");
     if (contactText) {
-      contactText.textContent = `Email ${CONTACT_EMAIL} or message us on ${PHONE}.`;
+      contactText.textContent = "Email " + CONTACT_EMAIL + " or message us on " + PHONE + ".";
     }
 
-    const networksList = footer.querySelector(".networks-list");
-    if (networksList) {
+    var networksList = footer.querySelector(".networks-list");
+    if (networksList && networksList.getAttribute("data-gozu-socials") !== "1") {
       networksList.innerHTML = "";
-      SOCIALS.forEach((item) => {
-        const li = document.createElement("li");
+
+      networks.forEach(function (item) {
+        var li = document.createElement("li");
         li.className = "network-item";
 
-        const a = document.createElement("a");
+        var a = document.createElement("a");
         a.className = "network-link";
         a.href = item.href;
         a.target = "_blank";
         a.rel = "noopener noreferrer";
         a.setAttribute("aria-label", item.label);
 
-        const icon = document.createElement("img");
+        var icon = document.createElement("span");
         icon.className = "gozu-network-icon";
-        icon.src = item.icon;
-        icon.alt = item.label;
-        icon.loading = "lazy";
+        icon.setAttribute("aria-hidden", "true");
 
-        const label = document.createElement("span");
-        label.className = "network-label";
-        label.textContent = item.label;
+        var img = document.createElement("img");
+        img.src = item.icon;
+        img.alt = "";
+        img.loading = "lazy";
+        icon.appendChild(img);
+
+        var text = document.createElement("span");
+        text.className = "network-label link-active";
+        text.textContent = item.label;
 
         a.appendChild(icon);
-        a.appendChild(label);
+        a.appendChild(text);
         li.appendChild(a);
         networksList.appendChild(li);
       });
+
+      networksList.setAttribute("data-gozu-socials", "1");
     }
 
-    const credits = footer.querySelector(".credits");
+    var credits = footer.querySelector(".credits");
     if (credits) {
-      credits.innerHTML = "";
-      const span = document.createElement("span");
+      credits.textContent = "";
+      var span = document.createElement("span");
       span.className = "gozu-credit-text";
       span.textContent = "Made by GozuStudio";
       credits.appendChild(span);
@@ -136,44 +145,62 @@
   }
 
   function patchReviewImage() {
-    document.querySelectorAll(".big-image-content").forEach((block) => {
-      const author = block.querySelector(".quote-author .name, .author-info .name, .name");
-      if (!author || !/isabella martin/i.test(author.textContent || "")) return;
+    var blocks = document.querySelectorAll(".big-image-content");
+    blocks.forEach(function (block) {
+      var author = block.querySelector(".quote-author .name, .author-info .name, .name");
+      if (!author || !/isabella martin/i.test(author.textContent || "")) {
+        return;
+      }
 
-      block.setAttribute("data-gozu-review-fixed", "1");
-      block.querySelectorAll(".image-wrapper picture source").forEach((s) => s.remove());
-      block.querySelectorAll(".image-wrapper img").forEach((img) => {
+      if (block.getAttribute("data-gozu-review-fixed") === "1") {
+        return;
+      }
+
+      var images = block.querySelectorAll(".image-wrapper img, img");
+      if (!images.length) return;
+
+      images.forEach(function (img) {
         img.src = REVIEW_IMAGE_PATH;
         img.removeAttribute("srcset");
         img.removeAttribute("sizes");
         img.loading = "eager";
+        img.style.opacity = "1";
+        img.style.visibility = "visible";
       });
+
+      block.querySelectorAll(".image-wrapper source").forEach(function (source) {
+        source.srcset = REVIEW_IMAGE_PATH;
+      });
+
+      block.setAttribute("data-gozu-review-fixed", "1");
     });
   }
 
-  function apply() {
-    try {
-      document.querySelectorAll(".footer").forEach(patchFooter);
-      patchReviewImage();
-    } catch (_) {
-      // Avoid breaking page JS if any override fails.
+  function applyOverrides() {
+    document.querySelectorAll(".footer").forEach(patchFooter);
+    patchReviewImage();
+  }
+
+  function scheduleApply() {
+    var tries = 0;
+    var maxTries = 20;
+
+    function run() {
+      tries += 1;
+      try {
+        applyOverrides();
+      } catch (_err) {
+        // Keep this override fail-safe and non-blocking.
+      }
+      if (tries >= maxTries) {
+        clearInterval(timer);
+      }
     }
+
+    run();
+    var timer = setInterval(run, 800);
   }
 
-  function queueApply() {
-    if (applyTimer) window.clearTimeout(applyTimer);
-    applyTimer = window.setTimeout(apply, 120);
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", apply, { once: true });
-  } else {
-    apply();
-  }
-
-  window.addEventListener("load", apply);
-
-  const root = document.body || document.documentElement;
-  const observer = new MutationObserver(queueApply);
-  observer.observe(root, { childList: true, subtree: true });
+  document.addEventListener("DOMContentLoaded", scheduleApply, { once: true });
+  window.addEventListener("load", scheduleApply, { once: true });
 })();
