@@ -218,9 +218,6 @@
       return;
     }
 
-    var params = new URLSearchParams(window.location.search || "");
-    var forceLightPreview = params.get("lightPreview") === "1";
-
     var knownPreviewHost = host.endsWith(".netlify.app") ||
       host.endsWith(".vercel.app") ||
       host.endsWith(".pages.dev") ||
@@ -228,7 +225,7 @@
       host.endsWith(".loca.lt") ||
       host.endsWith(".lhr.life");
 
-    if (!knownPreviewHost && !forceLightPreview) {
+    if (!knownPreviewHost) {
       return;
     }
 
@@ -264,7 +261,6 @@
 
     document.documentElement.classList.remove("is-loading", "loading");
     document.body.classList.remove("is-loading", "loading");
-    unlockScrollState();
     return true;
   }
 
@@ -292,30 +288,6 @@
     return false;
   }
 
-  function hasVisibleHeroTitles(carousel) {
-    if (!carousel) {
-      return false;
-    }
-
-    var titles = carousel.querySelectorAll(".title-sequence");
-    if (!titles.length) {
-      return false;
-    }
-
-    for (var i = 0; i < titles.length; i += 1) {
-      var title = titles[i];
-      var styles = window.getComputedStyle(title);
-      var visible = styles.display !== "none" &&
-        styles.visibility !== "hidden" &&
-        parseFloat(styles.opacity || "1") > 0.08;
-      if (visible) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
   function ensureCarouselFallback() {
     var carousels = document.querySelectorAll(".video-carousel");
     if (!carousels.length) {
@@ -323,11 +295,6 @@
     }
 
     carousels.forEach(function (carousel) {
-      if (carousel.getAttribute("data-gozu-sequence-watch") === "1") {
-        return;
-      }
-      carousel.setAttribute("data-gozu-sequence-watch", "1");
-
       var tries = 0;
 
       function checkFrame() {
@@ -335,18 +302,10 @@
 
         if (hasSequenceFrame(carousel)) {
           carousel.classList.add("gozu-sequence-ready");
-          carousel.classList.remove("gozu-sequence-failed");
-          carousel.setAttribute("data-gozu-sequence-watch", "done");
           return;
         }
 
-        if (tries > 10 && !hasVisibleHeroTitles(carousel)) {
-          carousel.classList.add("gozu-sequence-failed");
-        }
-
         if (tries > 80) {
-          carousel.classList.add("gozu-sequence-failed");
-          carousel.setAttribute("data-gozu-sequence-watch", "done");
           return;
         }
 
@@ -355,6 +314,113 @@
 
       checkFrame();
     });
+  }
+
+  function syncFeatureStepVideos() {
+    var section = document.querySelector(".features-steps");
+    if (!section) {
+      return;
+    }
+
+    var items = Array.prototype.slice.call(section.querySelectorAll(".scroll-item"));
+    var medias = Array.prototype.slice.call(section.querySelectorAll(".images .image"));
+
+    if (!items.length || !medias.length) {
+      return;
+    }
+
+    function findActiveIndex() {
+      for (var i = 0; i < items.length; i += 1) {
+        if (items[i].classList.contains("show")) {
+          return i;
+        }
+      }
+
+      var viewportMid = window.innerHeight * 0.5;
+      var bestIndex = 0;
+      var bestDistance = Infinity;
+
+      for (var j = 0; j < items.length; j += 1) {
+        var rect = items[j].getBoundingClientRect();
+        var center = rect.top + rect.height * 0.5;
+        var distance = Math.abs(center - viewportMid);
+
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = j;
+        }
+      }
+
+      return bestIndex;
+    }
+
+    function applyActiveMedia(index) {
+      var clamped = Math.max(0, Math.min(index, medias.length - 1));
+
+      medias.forEach(function (media, mediaIndex) {
+        var isActive = mediaIndex === clamped;
+        media.classList.toggle("gozu-force-active", isActive);
+
+        var video = media.querySelector("video");
+        if (!video) {
+          return;
+        }
+
+        if (isActive) {
+          video.muted = true;
+          video.loop = true;
+          video.playsInline = true;
+          var playPromise = video.play();
+          if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch(function () {});
+          }
+        } else {
+          video.pause();
+          if (video.currentTime > 0.05) {
+            try {
+              video.currentTime = 0;
+            } catch (_err) {
+              // Ignore seek errors for streams that are not yet seekable.
+            }
+          }
+        }
+      });
+    }
+
+    var lastIndex = -1;
+    function sync() {
+      var currentIndex = findActiveIndex();
+      if (currentIndex === lastIndex) {
+        return;
+      }
+
+      lastIndex = currentIndex;
+      applyActiveMedia(currentIndex);
+    }
+
+    sync();
+
+    if (!section.__gozuFeatureSyncBound) {
+      var itemObserver = new MutationObserver(sync);
+      items.forEach(function (item) {
+        itemObserver.observe(item, { attributes: true, attributeFilter: ["class"] });
+      });
+
+      section.__gozuFeatureSyncBound = true;
+      section.__gozuFeatureObserver = itemObserver;
+
+      window.addEventListener("scroll", sync, { passive: true });
+      window.addEventListener("resize", sync);
+    }
+
+    var bootTicks = 0;
+    var bootTimer = window.setInterval(function () {
+      sync();
+      bootTicks += 1;
+      if (bootTicks > 40) {
+        window.clearInterval(bootTimer);
+      }
+    }, 200);
   }
 
   function isWithinFeaturesZone() {
@@ -390,24 +456,6 @@
       ].forEach(function (className) {
         el.classList.remove(className);
       });
-    });
-  }
-
-  function ensureHeroTextVisible() {
-    var carousels = document.querySelectorAll(".video-carousel");
-    if (!carousels.length) {
-      return;
-    }
-
-    carousels.forEach(function (carousel) {
-      if (carousel.classList.contains("gozu-sequence-ready")) {
-        return;
-      }
-      if (hasVisibleHeroTitles(carousel)) {
-        return;
-      }
-
-      carousel.classList.add("gozu-sequence-failed");
     });
   }
 
@@ -460,37 +508,26 @@
       queued = false;
       applyOverrides();
       ensureCarouselFallback();
-      ensureHeroTextVisible();
+      syncFeatureStepVideos();
     });
   }
 
   enableExternalLightPreviewMode();
   document.addEventListener("DOMContentLoaded", queueApply);
   window.addEventListener("load", queueApply);
-  window.setTimeout(forceHideStuckLoader, 6000);
   window.setTimeout(forceHideStuckLoader, 12000);
-  window.setTimeout(ensureHeroTextVisible, 2400);
-  window.setTimeout(ensureHeroTextVisible, 5200);
-  window.setTimeout(unlockScrollState, 5200);
 
   var ticks = 0;
   var intervalId = setInterval(function () {
     queueApply();
     ticks += 1;
-    if (ticks > 18) {
+    if (ticks > 40) {
       clearInterval(intervalId);
     }
-  }, 650);
+  }, 500);
 
-  var observerTicks = 0;
-  var observer = new MutationObserver(function () {
-    observerTicks += 1;
-    queueApply();
-    if (observerTicks > 80) {
-      observer.disconnect();
-    }
-  });
-  observer.observe(document.body || document.documentElement, {
+  var observer = new MutationObserver(queueApply);
+  observer.observe(document.documentElement, {
     childList: true,
     subtree: true
   });
