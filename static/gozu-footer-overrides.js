@@ -176,9 +176,157 @@
     });
   }
 
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function patchFeaturesSteps() {
+    var section = document.querySelector(".features-steps");
+    if (!section || section.getAttribute("data-gozu-features-patched") === "1") {
+      return;
+    }
+
+    var inner = section.querySelector(".inner");
+    var scrollItems = Array.prototype.slice.call(section.querySelectorAll(".scroll-item"));
+    var mediaEls = Array.prototype.slice.call(section.querySelectorAll(".images .media-el"));
+    var counterEls = Array.prototype.slice.call(section.querySelectorAll(".counter__mobile"));
+    var buttons = Array.prototype.slice.call(section.querySelectorAll(".buttons .button"));
+    var length = Math.min(scrollItems.length, mediaEls.length);
+
+    if (!length) return;
+
+    var currentIndex = 0;
+    var wheelLocked = false;
+
+    function readCurrentIndex() {
+      var fromItems = scrollItems.findIndex(function (el) {
+        return el.classList.contains("show");
+      });
+      if (fromItems >= 0) return fromItems;
+
+      var fromMedia = mediaEls.findIndex(function (el) {
+        return el.classList.contains("is-visible");
+      });
+      if (fromMedia >= 0) return fromMedia;
+
+      if (inner) {
+        var raw = parseInt(getComputedStyle(inner).getPropertyValue("--current-item"), 10);
+        if (!Number.isNaN(raw)) return clamp(raw, 0, length - 1);
+      }
+
+      return 0;
+    }
+
+    function applyIndex(index) {
+      var safeIndex = clamp(index, 0, length - 1);
+      currentIndex = safeIndex;
+
+      if (inner) {
+        inner.style.setProperty("--current-item", String(safeIndex));
+      }
+
+      scrollItems.forEach(function (item, i) {
+        item.classList.toggle("show", i === safeIndex);
+      });
+
+      counterEls.forEach(function (item, i) {
+        item.classList.toggle("show", i === safeIndex);
+      });
+
+      mediaEls.forEach(function (mediaEl, i) {
+        var isActive = i === safeIndex;
+        mediaEl.classList.toggle("is-visible", isActive);
+        mediaEl.style.opacity = isActive ? "1" : "0";
+        mediaEl.style.visibility = isActive ? "visible" : "hidden";
+        mediaEl.style.pointerEvents = isActive ? "auto" : "none";
+
+        var video = mediaEl.querySelector("video");
+        if (!video) return;
+
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.setAttribute("playsinline", "");
+
+        if (isActive) {
+          var playPromise = video.play();
+          if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch(function () {});
+          }
+        } else {
+          video.pause();
+        }
+      });
+    }
+
+    function stepBy(delta) {
+      var next = clamp(currentIndex + delta, 0, length - 1);
+      if (next !== currentIndex) {
+        applyIndex(next);
+      }
+    }
+
+    currentIndex = readCurrentIndex();
+    applyIndex(currentIndex);
+
+    if (buttons[0]) {
+      buttons[0].addEventListener("click", function () {
+        stepBy(-1);
+      });
+    }
+    if (buttons[1]) {
+      buttons[1].addEventListener("click", function () {
+        stepBy(1);
+      });
+    }
+
+    section.addEventListener(
+      "wheel",
+      function (event) {
+        var rect = section.getBoundingClientRect();
+        var activeViewport = rect.top < window.innerHeight * 0.85 && rect.bottom > window.innerHeight * 0.15;
+        if (!activeViewport) return;
+        if (Math.abs(event.deltaY) < 4) return;
+        if (wheelLocked) return;
+
+        wheelLocked = true;
+        setTimeout(function () {
+          wheelLocked = false;
+        }, 160);
+
+        stepBy(event.deltaY > 0 ? 1 : -1);
+      },
+      { passive: true }
+    );
+
+    var observer = new MutationObserver(function () {
+      var observedIndex = readCurrentIndex();
+      if (observedIndex !== currentIndex) {
+        applyIndex(observedIndex);
+      }
+    });
+
+    scrollItems.forEach(function (item) {
+      observer.observe(item, { attributes: true, attributeFilter: ["class"] });
+    });
+    if (inner) {
+      observer.observe(inner, { attributes: true, attributeFilter: ["style"] });
+    }
+
+    var syncTries = 0;
+    var syncTimer = setInterval(function () {
+      syncTries += 1;
+      applyIndex(readCurrentIndex());
+      if (syncTries >= 30) clearInterval(syncTimer);
+    }, 500);
+
+    section.setAttribute("data-gozu-features-patched", "1");
+  }
+
   function applyOverrides() {
     document.querySelectorAll(".footer").forEach(patchFooter);
     patchReviewImage();
+    patchFeaturesSteps();
   }
 
   function scheduleApply() {
