@@ -1,534 +1,233 @@
-(function () {
-  const CONTACT_EMAIL = "info@gozustudio.com";
-  const PHONE = "+44 07765 577275";
-  const LOGO_SVG_PATH = "/static/images/gozustudio-logo.svg";
-  const REVIEW_IMAGE_PATH = "/static/images/Review.jpeg";
+(() => {
+  if (window.__gozuMediaRecoveryInitialized) return;
+  window.__gozuMediaRecoveryInitialized = true;
 
-  let cachedLogoSVG = "";
-  let logoFetchPromise = null;
+  const FALLBACK_REVIEW_IMAGE = "/static/images/Review.jpeg";
+  const FALLBACK_LOGO_IMAGE = "/static/images/gozustudio-logo-white.svg";
+  let mutationQueued = false;
 
-  const networks = [
-    {
-      label: "Telegram",
-      svg: "<svg role=\"img\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\"><title>Telegram</title><path d=\"M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z\"/></svg>",
-      href: "https://t.me/+447765577275"
-    },
-    {
-      label: "Instagram",
-      svg: "<svg role=\"img\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\"><title>Instagram</title><path d=\"M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077\"/></svg>",
-      href: "https://www.instagram.com/gozustudio/"
-    },
-    {
-      label: "WhatsApp",
-      svg: "<svg role=\"img\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\"><title>WhatsApp</title><path d=\"M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z\"/></svg>",
-      href: "https://wa.me/447765577275"
+  const safePlay = (video) => {
+    if (!video) return;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.setAttribute("playsinline", "");
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {});
     }
-  ];
+  };
 
-  function loadLogoSVG() {
-    if (cachedLogoSVG) {
-      return Promise.resolve(cachedLogoSVG);
-    }
-    if (logoFetchPromise) {
-      return logoFetchPromise;
-    }
+  const forceHideStuckLoader = () => {
+    const candidates = document.querySelectorAll(
+      ".app-loader, .loader, .loading-screen, .page-loader, [data-loader], [data-loading]"
+    );
 
-    logoFetchPromise = fetch(LOGO_SVG_PATH)
-      .then(function (res) {
-        if (!res.ok) {
-          throw new Error("Failed to load logo SVG");
-        }
-        return res.text();
-      })
-      .then(function (svgText) {
-        cachedLogoSVG = svgText;
-        return cachedLogoSVG;
-      })
-      .catch(function () {
-        return "";
-      });
+    candidates.forEach((el) => {
+      if (!el) return;
+      const style = window.getComputedStyle(el);
+      const isBlocking =
+        style.position === "fixed" ||
+        style.position === "sticky" ||
+        style.zIndex === "9999" ||
+        style.zIndex === "2147483647";
 
-    return logoFetchPromise;
-  }
+      if (!isBlocking && !el.className.toLowerCase().includes("loader")) return;
 
-  function forceLogo(logoSection) {
-    if (!logoSection) {
-      return;
-    }
-
-    var oldLogo = logoSection.querySelector(".terminal-logo");
-    if (oldLogo) {
-      oldLogo.remove();
-    }
-
-    var oldWordmark = logoSection.querySelector(".gozu-logo-wordmark");
-    if (oldWordmark) {
-      oldWordmark.remove();
-    }
-
-    var holder = logoSection.querySelector(".gozu-logo-inline");
-    if (!holder) {
-      holder = document.createElement("div");
-      holder.className = "gozu-logo-inline";
-      logoSection.insertBefore(holder, logoSection.firstChild);
-    }
-
-    loadLogoSVG().then(function (svgText) {
-      if (svgText) {
-        holder.innerHTML = svgText;
-        var svg = holder.querySelector("svg");
-        if (svg) {
-          svg.setAttribute("preserveAspectRatio", "xMinYMid meet");
-          svg.setAttribute("width", "100%");
-          svg.setAttribute("height", "100%");
-        }
-      } else {
-        holder.style.backgroundImage = "url('" + LOGO_SVG_PATH + "')";
-      }
+      el.style.opacity = "0";
+      el.style.visibility = "hidden";
+      el.style.pointerEvents = "none";
+      el.style.display = "none";
+      el.setAttribute("aria-hidden", "true");
+      el.setAttribute("data-gozu-hidden", "true");
     });
-  }
 
-  function forceFooter(footer) {
-    forceLogo(footer.querySelector(".logo-section"));
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+    document.body.style.position = "";
+    document.body.style.touchAction = "auto";
+  };
 
-    var gartner = footer.querySelector(".gartner-section");
-    if (gartner) {
-      gartner.classList.add("gozu-proof");
-      gartner.innerHTML = "<p class=\"gozu-proof-text\">Thoughtful architecture and interiors designed to improve how people live, work, and gather.</p>";
-    }
+  const patchBrokenStoryblokImages = () => {
+    const imgs = document.querySelectorAll('img[src*="storyblok.com"], img[data-src*="storyblok.com"]');
 
-    var labels = footer.querySelectorAll(".links-list .label span");
-    if (labels[0]) {
-      labels[0].textContent = "Our Style";
-    }
-    if (labels[1]) {
-      labels[1].textContent = "Company";
-    }
+    imgs.forEach((img) => {
+      if (img.dataset.gozuPatched === "1") return;
+      img.dataset.gozuPatched = "1";
 
-    var contactLink = footer.querySelector(".contact-link");
-    if (contactLink) {
-      contactLink.textContent = "Connect with our experts today.";
-      contactLink.href = "mailto:" + CONTACT_EMAIL;
-      contactLink.target = "";
-      contactLink.rel = "";
-    }
+      const src = img.getAttribute("src") || img.getAttribute("data-src") || "";
+      const isLogoLike = /(ryder|prologis|nfi|lineage|8vc|logo|coca-cola|hp)\./i.test(src);
+      const fallback = isLogoLike ? FALLBACK_LOGO_IMAGE : FALLBACK_REVIEW_IMAGE;
 
-    var contactText = footer.querySelector(".contact-text");
-    if (contactText) {
-      contactText.textContent = "Email " + CONTACT_EMAIL + " or message us on " + PHONE + ".";
-    }
-
-    var networksList = footer.querySelector(".networks-list");
-    if (networksList) {
-      networksList.innerHTML = "";
-
-      networks.forEach(function (item) {
-        var li = document.createElement("li");
-        li.className = "network-item";
-
-        var a = document.createElement("a");
-        a.className = "network-link";
-        a.href = item.href;
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-        a.setAttribute("aria-label", item.label);
-
-        var icon = document.createElement("span");
-        icon.className = "gozu-network-icon";
-        icon.setAttribute("aria-hidden", "true");
-        icon.innerHTML = item.svg;
-
-        var span = document.createElement("span");
-        span.className = "network-label link-active";
-        span.textContent = item.label;
-
-        a.appendChild(icon);
-        a.appendChild(span);
-        li.appendChild(a);
-        networksList.appendChild(li);
-      });
-    }
-
-    var credits = footer.querySelector(".credits");
-    if (credits) {
-      credits.textContent = "";
-      var span = document.createElement("span");
-      span.className = "gozu-credit-text";
-      span.textContent = "Made by GozuStudio";
-      credits.appendChild(span);
-    }
-  }
-
-  function forceReviewImage() {
-    var blocks = document.querySelectorAll(".big-image-content");
-    blocks.forEach(function (block) {
-      var author = block.querySelector(".quote-author .name, .author-info .name, .name");
-      if (!author || !/isabella martin/i.test(author.textContent || "")) {
-        return;
-      }
-
-      block.querySelectorAll(".image-wrapper picture").forEach(function (picture) {
-        picture.querySelectorAll("source").forEach(function (source) {
-          source.remove();
-        });
-      });
-
-      var targetImages = block.querySelectorAll(".image-wrapper img");
-      if (!targetImages.length) {
-        targetImages = block.querySelectorAll("img");
-      }
-
-      if (!targetImages.length) {
-        return;
-      }
-
-      targetImages.forEach(function (img) {
-        if (img.getAttribute("data-gozu-review") === "1") {
-          return;
-        }
-
-        img.setAttribute("src", REVIEW_IMAGE_PATH);
+      const applyFallback = () => {
+        if (!img.isConnected) return;
+        if (img.naturalWidth > 0) return;
         img.removeAttribute("srcset");
-        img.removeAttribute("sizes");
-        img.setAttribute("loading", "eager");
-        img.style.opacity = "1";
-        img.style.visibility = "visible";
-        img.setAttribute("data-gozu-review", "1");
-        img.style.transition = "none";
-        img.style.animation = "none";
+        img.setAttribute("src", fallback);
+        img.style.objectFit = "contain";
+      };
+
+      img.addEventListener("error", applyFallback, { once: true });
+      setTimeout(() => {
+        if (!img.complete || img.naturalWidth === 0) {
+          applyFallback();
+        }
+      }, 3500);
+    });
+  };
+
+  const patchStoryblokBackgroundImages = () => {
+    const elems = document.querySelectorAll("*");
+    elems.forEach((el) => {
+      if (el.dataset.gozuBgPatched === "1") return;
+      const bg = window.getComputedStyle(el).backgroundImage;
+      if (!bg || bg === "none" || !bg.includes("storyblok.com")) return;
+
+      el.dataset.gozuBgPatched = "1";
+      const match = bg.match(/url\(["']?(.*?)["']?\)/i);
+      if (!match || !match[1]) return;
+
+      const tester = new Image();
+      tester.onload = () => {
+        el.style.setProperty("background-color", "transparent", "important");
+      };
+      tester.onerror = () => {
+        el.style.setProperty("background-image", `url('${FALLBACK_REVIEW_IMAGE}')`, "important");
+        el.style.setProperty("background-size", "cover", "important");
+        el.style.setProperty("background-position", "center center", "important");
+        el.style.setProperty("background-repeat", "no-repeat", "important");
+      };
+      tester.src = match[1];
+    });
+  };
+
+  const syncFeatureVideos = () => {
+    const videos = Array.from(document.querySelectorAll("video"));
+    if (!videos.length) return;
+
+    videos.forEach((video) => {
+      video.loop = true;
+      video.preload = "auto";
+      video.muted = true;
+      video.defaultMuted = true;
+      video.playsInline = true;
+      video.setAttribute("playsinline", "");
+    });
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const video = entry.target;
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.45) {
+            videos.forEach((other) => {
+              if (other !== video && !other.paused) other.pause();
+            });
+            safePlay(video);
+          }
+        });
+      },
+      { threshold: [0.45, 0.7] }
+    );
+
+    videos.forEach((video) => observer.observe(video));
+
+    const ensureOneVisibleVideoPlays = () => {
+      const visible = videos.find((video) => {
+        const rect = video.getBoundingClientRect();
+        return rect.top < window.innerHeight * 0.9 && rect.bottom > window.innerHeight * 0.2;
       });
+      if (visible) safePlay(visible);
+    };
 
-      block.setAttribute("data-gozu-review-fixed", "1");
-    });
-  }
+    ensureOneVisibleVideoPlays();
+    window.addEventListener("scroll", ensureOneVisibleVideoPlays, { passive: true });
+  };
 
-  function applyOverrides() {
-    var footers = document.querySelectorAll(".footer");
-    if (footers.length) {
-      footers.forEach(forceFooter);
-    }
-    forceReviewImage();
-  }
+  const installHeroSequenceFallback = () => {
+    const sequenceRoot = document.querySelector(
+      ".video-sequence, [class*='video-sequence'], [class*='hero-sequence'], [class*='get-frames']"
+    );
+    if (!sequenceRoot) return;
+    if (sequenceRoot.querySelector(".gozu-sequence-fallback")) return;
 
-  function enableExternalLightPreviewMode() {
-    var host = window.location.hostname || "";
-    var isLocal = host === "127.0.0.1" || host === "localhost";
+    window.setTimeout(() => {
+      const hasCanvas = !!sequenceRoot.querySelector("canvas");
+      const hasLoadedFrame = !!sequenceRoot.querySelector("img[src*='hero_anim'], img[src*='frames/home']");
+      if (hasCanvas || hasLoadedFrame) return;
 
-    if (isLocal) {
-      return;
-    }
+      const fallbackVideo = document.createElement("video");
+      fallbackVideo.className = "gozu-sequence-fallback";
+      fallbackVideo.src = "/static/videos/hp-where-4.mp4";
+      fallbackVideo.autoplay = true;
+      fallbackVideo.loop = true;
+      fallbackVideo.muted = true;
+      fallbackVideo.defaultMuted = true;
+      fallbackVideo.playsInline = true;
+      fallbackVideo.style.width = "100%";
+      fallbackVideo.style.height = "100%";
+      fallbackVideo.style.objectFit = "cover";
+      fallbackVideo.style.display = "block";
+      sequenceRoot.appendChild(fallbackVideo);
+      safePlay(fallbackVideo);
+    }, 3200);
+  };
 
-    var knownPreviewHost = host.endsWith(".netlify.app") ||
-      host.endsWith(".vercel.app") ||
-      host.endsWith(".pages.dev") ||
-      host.endsWith(".trycloudflare.com") ||
-      host.endsWith(".loca.lt") ||
-      host.endsWith(".lhr.life");
+  const installScrollFreezeGuard = () => {
+    let unchangedScrollTicks = 0;
+    let lastY = window.scrollY;
 
-    if (!knownPreviewHost) {
-      return;
-    }
+    const unlock = () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "auto";
+      document.body.style.position = "";
+    };
 
-    document.documentElement.classList.add("gozu-light-preview");
-  }
-
-  function forceHideStuckLoader() {
-    var loaderNodes = document.querySelectorAll(".app-loader, .app-transition");
-    if (!loaderNodes.length) {
-      return false;
-    }
-
-    var hasVisibleLoader = false;
-    loaderNodes.forEach(function (node) {
-      var styles = window.getComputedStyle(node);
-      var isVisible = styles.display !== "none" &&
-        styles.visibility !== "hidden" &&
-        parseFloat(styles.opacity || "1") > 0.05;
-      if (isVisible) {
-        hasVisibleLoader = true;
-      }
-    });
-
-    if (!hasVisibleLoader) {
-      return false;
-    }
-
-    loaderNodes.forEach(function (node) {
-      node.style.opacity = "0";
-      node.style.visibility = "hidden";
-      node.style.pointerEvents = "none";
-    });
-
-    document.documentElement.classList.remove("is-loading", "loading");
-    document.body.classList.remove("is-loading", "loading");
-    return true;
-  }
-
-  function hasSequenceFrame(carousel) {
-    if (!carousel) {
-      return false;
-    }
-
-    var canvases = carousel.querySelectorAll(".video-sequence canvas");
-    for (var i = 0; i < canvases.length; i += 1) {
-      var canvas = canvases[i];
-      if (canvas && canvas.width > 0 && canvas.height > 0) {
-        return true;
-      }
-    }
-
-    var imgs = carousel.querySelectorAll(".video-sequence img");
-    for (var j = 0; j < imgs.length; j += 1) {
-      var img = imgs[j];
-      if (img && img.complete && img.naturalWidth > 16) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  function ensureCarouselFallback() {
-    var carousels = document.querySelectorAll(".video-carousel");
-    if (!carousels.length) {
-      return;
-    }
-
-    carousels.forEach(function (carousel) {
-      var tries = 0;
-
-      function checkFrame() {
-        tries += 1;
-
-        if (hasSequenceFrame(carousel)) {
-          carousel.classList.add("gozu-sequence-ready");
-          return;
-        }
-
-        if (tries > 80) {
-          return;
-        }
-
-        window.setTimeout(checkFrame, 250);
-      }
-
-      checkFrame();
-    });
-  }
-
-  function syncFeatureStepVideos() {
-    var section = document.querySelector(".features-steps");
-    if (!section) {
-      return;
-    }
-
-    var items = Array.prototype.slice.call(section.querySelectorAll(".scroll-item"));
-    var medias = Array.prototype.slice.call(section.querySelectorAll(".images .image"));
-
-    if (!items.length || !medias.length) {
-      return;
-    }
-
-    function findActiveIndex() {
-      for (var i = 0; i < items.length; i += 1) {
-        if (items[i].classList.contains("show")) {
-          return i;
-        }
-      }
-
-      var viewportMid = window.innerHeight * 0.5;
-      var bestIndex = 0;
-      var bestDistance = Infinity;
-
-      for (var j = 0; j < items.length; j += 1) {
-        var rect = items[j].getBoundingClientRect();
-        var center = rect.top + rect.height * 0.5;
-        var distance = Math.abs(center - viewportMid);
-
-        if (distance < bestDistance) {
-          bestDistance = distance;
-          bestIndex = j;
-        }
-      }
-
-      return bestIndex;
-    }
-
-    function applyActiveMedia(index) {
-      var clamped = Math.max(0, Math.min(index, medias.length - 1));
-
-      medias.forEach(function (media, mediaIndex) {
-        var isActive = mediaIndex === clamped;
-        media.classList.toggle("gozu-force-active", isActive);
-
-        var video = media.querySelector("video");
-        if (!video) {
-          return;
-        }
-
-        if (isActive) {
-          video.muted = true;
-          video.loop = true;
-          video.playsInline = true;
-          var playPromise = video.play();
-          if (playPromise && typeof playPromise.catch === "function") {
-            playPromise.catch(function () {});
+    window.addEventListener(
+      "wheel",
+      () => {
+        const nowY = window.scrollY;
+        if (Math.abs(nowY - lastY) < 1) {
+          unchangedScrollTicks += 1;
+          if (unchangedScrollTicks >= 8) {
+            unlock();
+            unchangedScrollTicks = 0;
           }
         } else {
-          video.pause();
-          if (video.currentTime > 0.05) {
-            try {
-              video.currentTime = 0;
-            } catch (_err) {
-              // Ignore seek errors for streams that are not yet seekable.
-            }
-          }
+          unchangedScrollTicks = 0;
+          lastY = nowY;
         }
-      });
-    }
+      },
+      { passive: true }
+    );
 
-    var lastIndex = -1;
-    function sync() {
-      var currentIndex = findActiveIndex();
-      if (currentIndex === lastIndex) {
-        return;
-      }
+    window.addEventListener("touchmove", unlock, { passive: true });
+  };
 
-      lastIndex = currentIndex;
-      applyActiveMedia(currentIndex);
-    }
+  const runAllFixes = () => {
+    forceHideStuckLoader();
+    patchBrokenStoryblokImages();
+    patchStoryblokBackgroundImages();
+    syncFeatureVideos();
+    installHeroSequenceFallback();
+    installScrollFreezeGuard();
+  };
 
-    sync();
-
-    if (!section.__gozuFeatureSyncBound) {
-      var itemObserver = new MutationObserver(sync);
-      items.forEach(function (item) {
-        itemObserver.observe(item, { attributes: true, attributeFilter: ["class"] });
-      });
-
-      section.__gozuFeatureSyncBound = true;
-      section.__gozuFeatureObserver = itemObserver;
-
-      window.addEventListener("scroll", sync, { passive: true });
-      window.addEventListener("resize", sync);
-    }
-
-    var bootTicks = 0;
-    var bootTimer = window.setInterval(function () {
-      sync();
-      bootTicks += 1;
-      if (bootTicks > 40) {
-        window.clearInterval(bootTimer);
-      }
-    }, 200);
-  }
-
-  function isWithinFeaturesZone() {
-    var section = document.querySelector(".features-steps");
-    if (!section) {
-      return false;
-    }
-
-    var rect = section.getBoundingClientRect();
-    return rect.top < window.innerHeight * 0.8 && rect.bottom > window.innerHeight * 0.2;
-  }
-
-  function unlockScrollState() {
-    [document.documentElement, document.body].forEach(function (el) {
-      if (!el) {
-        return;
-      }
-      el.style.overflow = "";
-      el.style.overflowY = "";
-      el.style.position = "";
-      el.style.top = "";
-      el.style.width = "";
-
-      [
-        "lenis-stopped",
-        "lenis-locked",
-        "no-scroll",
-        "overflow-hidden",
-        "scroll-locked",
-        "is-locked",
-        "menu-open",
-        "modal-open"
-      ].forEach(function (className) {
-        el.classList.remove(className);
-      });
+  const queueRun = () => {
+    if (mutationQueued) return;
+    mutationQueued = true;
+    requestAnimationFrame(() => {
+      mutationQueued = false;
+      runAllFixes();
     });
-  }
+  };
 
-  var stuckWheelCount = 0;
-  function rescueWheelScroll(event) {
-    if (!event || Math.abs(event.deltaY || 0) < 1) {
-      return;
-    }
+  document.addEventListener("DOMContentLoaded", runAllFixes);
+  window.addEventListener("load", runAllFixes);
+  setTimeout(runAllFixes, 600);
+  setTimeout(runAllFixes, 2000);
+  setTimeout(runAllFixes, 5000);
 
-    if (!isWithinFeaturesZone()) {
-      stuckWheelCount = 0;
-      return;
-    }
-
-    var startY = window.scrollY || window.pageYOffset || 0;
-    var deltaY = event.deltaY;
-
-    window.setTimeout(function () {
-      var endY = window.scrollY || window.pageYOffset || 0;
-      var maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-      var moved = Math.abs(endY - startY) > 0.5;
-
-      if (!moved && endY > 0 && endY < maxY) {
-        stuckWheelCount += 1;
-      } else {
-        stuckWheelCount = 0;
-      }
-
-      if (stuckWheelCount < 2) {
-        return;
-      }
-
-      stuckWheelCount = 0;
-      unlockScrollState();
-
-      var nudge = Math.max(24, Math.min(140, Math.abs(deltaY)));
-      window.scrollBy({ top: deltaY > 0 ? nudge : -nudge, left: 0, behavior: "auto" });
-    }, 90);
-  }
-
-  window.addEventListener("wheel", rescueWheelScroll, { passive: true });
-
-  var queued = false;
-  function queueApply() {
-    if (queued) {
-      return;
-    }
-    queued = true;
-    requestAnimationFrame(function () {
-      queued = false;
-      applyOverrides();
-      ensureCarouselFallback();
-      syncFeatureStepVideos();
-    });
-  }
-
-  enableExternalLightPreviewMode();
-  document.addEventListener("DOMContentLoaded", queueApply);
-  window.addEventListener("load", queueApply);
-  window.setTimeout(forceHideStuckLoader, 12000);
-
-  var ticks = 0;
-  var intervalId = setInterval(function () {
-    queueApply();
-    ticks += 1;
-    if (ticks > 40) {
-      clearInterval(intervalId);
-    }
-  }, 500);
-
-  var observer = new MutationObserver(queueApply);
-  observer.observe(document.documentElement, {
-    childList: true,
-    subtree: true
-  });
+  const mo = new MutationObserver(queueRun);
+  mo.observe(document.documentElement, { childList: true, subtree: true });
 })();
