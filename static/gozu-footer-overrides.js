@@ -13,6 +13,8 @@
     { label: "WhatsApp", href: "https://wa.me/447765577275", icon: "/static/images/whatsapp.svg" }
   ];
 
+  const patchedFeatureSections = new WeakSet();
+
   let cachedLogoSvg = "";
   let logoPromise = null;
   let applyTimer = null;
@@ -150,9 +152,76 @@
     });
   }
 
+  function patchFeaturesSteps() {
+    document.querySelectorAll(".features-steps").forEach((section) => {
+      const items = Array.from(section.querySelectorAll("li.scroll-item"));
+      const media = Array.from(section.querySelectorAll(".media-el")).slice(0, items.length);
+      if (!items.length || !media.length) return;
+
+      function sync() {
+        const activeIndex = Math.max(
+          0,
+          items.findIndex((li) => li.classList.contains("show"))
+        );
+
+        media.forEach((el, index) => {
+          const isActive = index === activeIndex;
+          el.classList.toggle("is-visible", isActive);
+          el.style.opacity = isActive ? "1" : "0";
+          el.style.visibility = isActive ? "visible" : "hidden";
+          el.style.pointerEvents = isActive ? "auto" : "none";
+
+          el.querySelectorAll("video").forEach((video) => {
+            if (isActive) {
+              video.muted = true;
+              video.playsInline = true;
+              const playPromise = video.play();
+              if (playPromise && typeof playPromise.catch === "function") {
+                playPromise.catch(() => {});
+              }
+            } else {
+              video.pause();
+            }
+          });
+        });
+      }
+
+      if (!patchedFeatureSections.has(section)) {
+        patchedFeatureSections.add(section);
+
+        let rafPending = false;
+        const requestSync = () => {
+          if (rafPending) return;
+          rafPending = true;
+          window.requestAnimationFrame(() => {
+            rafPending = false;
+            sync();
+          });
+        };
+
+        const classObserver = new MutationObserver(requestSync);
+        items.forEach((item) => {
+          classObserver.observe(item, { attributes: true, attributeFilter: ["class"] });
+        });
+
+        window.addEventListener("scroll", requestSync, { passive: true });
+        window.addEventListener("resize", requestSync);
+
+        section.__gozuFeatureSync = requestSync;
+      }
+
+      if (typeof section.__gozuFeatureSync === "function") {
+        section.__gozuFeatureSync();
+      } else {
+        sync();
+      }
+    });
+  }
+
   function apply() {
     document.querySelectorAll(".footer").forEach(patchFooter);
     patchReviewImage();
+    patchFeaturesSteps();
   }
 
   function queueApply() {
