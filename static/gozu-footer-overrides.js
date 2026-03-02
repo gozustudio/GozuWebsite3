@@ -6,15 +6,12 @@
   const PHONE = "+44 07765 577275";
   const LOGO_SVG_PATH = "/static/images/gozustudio-logo.svg";
   const REVIEW_IMAGE_PATH = "/static/images/Review.jpeg";
-  const FEATURES_FIX_STYLE_ID = "gozu-features-media-fix-style";
 
   const SOCIALS = [
     { label: "Telegram", href: "https://t.me/+447765577275", icon: "/static/images/telegram.svg" },
     { label: "Instagram", href: "https://www.instagram.com/gozustudio/", icon: "/static/images/instagram.svg" },
     { label: "WhatsApp", href: "https://wa.me/447765577275", icon: "/static/images/whatsapp.svg" }
   ];
-
-  const patchedFeatureSections = new WeakSet();
 
   let cachedLogoSvg = "";
   let logoPromise = null;
@@ -50,6 +47,7 @@
 
     loadLogoSvg().then((svgText) => {
       if (!wrap || !wrap.isConnected) return;
+
       if (svgText) {
         wrap.innerHTML = svgText;
         const svg = wrap.querySelector("svg");
@@ -153,104 +151,13 @@
     });
   }
 
-  function ensureFeaturesFixStyle() {
-    if (document.getElementById(FEATURES_FIX_STYLE_ID)) return;
-
-    const style = document.createElement("style");
-    style.id = FEATURES_FIX_STYLE_ID;
-    style.textContent = [
-      ".features-steps .media-el {",
-      "  display: none !important;",
-      "  opacity: 0 !important;",
-      "  visibility: hidden !important;",
-      "  pointer-events: none !important;",
-      "}",
-      ".features-steps .media-el[data-gozu-active=\"1\"] {",
-      "  display: block !important;",
-      "  opacity: 1 !important;",
-      "  visibility: visible !important;",
-      "  pointer-events: auto !important;",
-      "}"
-    ].join("\n");
-
-    document.head.appendChild(style);
-  }
-
-  function patchFeaturesSteps() {
-    ensureFeaturesFixStyle();
-
-    document.querySelectorAll(".features-steps").forEach((section) => {
-      const items = Array.from(section.querySelectorAll("li.scroll-item"));
-      const media = Array.from(section.querySelectorAll(".media-el")).slice(0, items.length);
-      if (!items.length || !media.length) return;
-
-      function sync() {
-        const activeIndex = Math.max(
-          0,
-          items.findIndex((li) => li.classList.contains("show"))
-        );
-
-        media.forEach((el, index) => {
-          const isActive = index === activeIndex;
-          if (isActive) {
-            el.setAttribute("data-gozu-active", "1");
-          } else {
-            el.removeAttribute("data-gozu-active");
-          }
-
-          el.querySelectorAll("video").forEach((video) => {
-            if (isActive) {
-              video.muted = true;
-              video.playsInline = true;
-              const playPromise = video.play();
-              if (playPromise && typeof playPromise.catch === "function") {
-                playPromise.catch(() => {});
-              }
-            } else {
-              video.pause();
-            }
-          });
-        });
-      }
-
-      if (!patchedFeatureSections.has(section)) {
-        patchedFeatureSections.add(section);
-
-        let rafPending = false;
-        const requestSync = () => {
-          if (rafPending) return;
-          rafPending = true;
-          window.requestAnimationFrame(() => {
-            rafPending = false;
-            sync();
-          });
-        };
-
-        const classObserver = new MutationObserver(requestSync);
-        items.forEach((item) => {
-          classObserver.observe(item, { attributes: true, attributeFilter: ["class"] });
-        });
-
-        window.addEventListener("scroll", requestSync, { passive: true });
-        window.addEventListener("resize", requestSync);
-
-        const intervalId = window.setInterval(sync, 180);
-        section.__gozuFeatureSync = requestSync;
-        section.__gozuFeatureIntervalId = intervalId;
-      }
-
-      if (typeof section.__gozuFeatureSync === "function") {
-        section.__gozuFeatureSync();
-      } else {
-        sync();
-      }
-    });
-  }
-
   function apply() {
-    document.querySelectorAll(".footer").forEach(patchFooter);
-    patchReviewImage();
-    patchFeaturesSteps();
+    try {
+      document.querySelectorAll(".footer").forEach(patchFooter);
+      patchReviewImage();
+    } catch (_) {
+      // Avoid breaking page JS if any override fails.
+    }
   }
 
   function queueApply() {
