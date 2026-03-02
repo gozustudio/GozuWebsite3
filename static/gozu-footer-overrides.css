@@ -225,3 +225,32 @@ img[data-gozu-review="1"] {
   position: relative;
   z-index: 2;
 }
+
+/* Extra guardrails: keep hero copy visible when preview-host JS state is unstable */
+.gozu-light-preview .video-carousel .content {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  min-height: 68vh !important;
+}
+
+.gozu-light-preview .video-carousel .title-sequence,
+.gozu-light-preview .video-carousel .title-sequence * {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+}
+
+.gozu-light-preview .video-carousel .title-sequence {
+  position: static !important;
+  inset: auto !important;
+  display: block !important;
+}
+
+.gozu-light-preview .video-carousel .homepage-scroll-content {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+}
