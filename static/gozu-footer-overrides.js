@@ -5,6 +5,7 @@
   const FALLBACK_REVIEW_IMAGE = "/static/images/Review.jpeg";
   const FALLBACK_LOGO_IMAGE = "/static/images/gozustudio-logo-white.svg";
   let mutationQueued = false;
+  let scrollGuardInstalled = false;
 
   const safePlay = (video) => {
     if (!video) return;
@@ -18,6 +19,25 @@
     }
   };
 
+  const clearPictureSources = (img) => {
+    const picture = img.closest("picture");
+    if (!picture) return;
+    picture.querySelectorAll("source").forEach((source) => {
+      source.removeAttribute("srcset");
+      source.removeAttribute("sizes");
+    });
+  };
+
+  const replaceImageWithFallback = (img, fallback) => {
+    if (!img || !img.isConnected) return;
+    clearPictureSources(img);
+    img.removeAttribute("srcset");
+    img.removeAttribute("sizes");
+    img.setAttribute("src", fallback);
+    img.style.objectFit = "contain";
+    img.style.opacity = "1";
+  };
+
   const forceHideStuckLoader = () => {
     const candidates = document.querySelectorAll(
       ".app-loader, .loader, .loading-screen, .page-loader, [data-loader], [data-loading]"
@@ -26,13 +46,14 @@
     candidates.forEach((el) => {
       if (!el) return;
       const style = window.getComputedStyle(el);
+      const className = (el.className || "").toString().toLowerCase();
       const isBlocking =
         style.position === "fixed" ||
         style.position === "sticky" ||
-        style.zIndex === "9999" ||
-        style.zIndex === "2147483647";
+        Number(style.zIndex || 0) > 999 ||
+        className.includes("loader");
 
-      if (!isBlocking && !el.className.toLowerCase().includes("loader")) return;
+      if (!isBlocking) return;
 
       el.style.opacity = "0";
       el.style.visibility = "hidden";
@@ -49,30 +70,28 @@
   };
 
   const patchBrokenStoryblokImages = () => {
-    const imgs = document.querySelectorAll('img[src*="storyblok.com"], img[data-src*="storyblok.com"]');
+    const imgs = document.querySelectorAll('img[src*="storyblok.com"], img[data-src*="storyblok.com"], img[data-nuxt-img]');
 
     imgs.forEach((img) => {
+      const src = img.getAttribute("src") || img.getAttribute("data-src") || img.currentSrc || "";
+      if (!src.includes("storyblok.com")) return;
+
       if (img.dataset.gozuPatched === "1") return;
       img.dataset.gozuPatched = "1";
 
-      const src = img.getAttribute("src") || img.getAttribute("data-src") || "";
       const isLogoLike = /(ryder|prologis|nfi|lineage|8vc|logo|coca-cola|hp)\./i.test(src);
       const fallback = isLogoLike ? FALLBACK_LOGO_IMAGE : FALLBACK_REVIEW_IMAGE;
 
-      const applyFallback = () => {
+      const checkAndPatch = () => {
         if (!img.isConnected) return;
         if (img.naturalWidth > 0) return;
-        img.removeAttribute("srcset");
-        img.setAttribute("src", fallback);
-        img.style.objectFit = "contain";
+        replaceImageWithFallback(img, fallback);
       };
 
-      img.addEventListener("error", applyFallback, { once: true });
-      setTimeout(() => {
-        if (!img.complete || img.naturalWidth === 0) {
-          applyFallback();
-        }
-      }, 3500);
+      img.addEventListener("error", checkAndPatch, { once: true });
+      setTimeout(checkAndPatch, 1500);
+      setTimeout(checkAndPatch, 3500);
+      setTimeout(checkAndPatch, 7000);
     });
   };
 
@@ -173,6 +192,9 @@
   };
 
   const installScrollFreezeGuard = () => {
+    if (scrollGuardInstalled) return;
+    scrollGuardInstalled = true;
+
     let unchangedScrollTicks = 0;
     let lastY = window.scrollY;
 
