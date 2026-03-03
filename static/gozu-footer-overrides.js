@@ -1,17 +1,17 @@
 (function () {
-  const CONTACT_EMAIL = "info@gozustudio.com";
-  const PHONE = "+44 07765 577275";
-  const LOGO_SVG_PATH = "/static/images/gozustudio-logo.svg";
-  const REVIEW_IMAGE_PATH = "/static/images/Review.jpeg";
+  var CONTACT_EMAIL = "info@gozustudio.com";
+  var PHONE = "+44 07765 577275";
+  var LOGO_SVG_PATH = "/static/images/gozustudio-logo.svg";
+  var REVIEW_IMAGE_PATH = "/static/images/Review.jpeg";
 
-  const networks = [
+  var networks = [
     { label: "Telegram", href: "https://t.me/+447765577275", icon: "/static/images/telegram.svg" },
     { label: "Instagram", href: "https://www.instagram.com/gozustudio/", icon: "/static/images/instagram.svg" },
     { label: "WhatsApp", href: "https://wa.me/447765577275", icon: "/static/images/whatsapp.svg" }
   ];
 
-  let cachedLogoSVG = "";
-  let logoFetchPromise = null;
+  var cachedLogoSVG = "";
+  var logoFetchPromise = null;
 
   function loadLogoSVG() {
     if (cachedLogoSVG) return Promise.resolve(cachedLogoSVG);
@@ -118,7 +118,7 @@
         var img = document.createElement("img");
         img.src = item.icon;
         img.alt = "";
-        img.loading = "lazy";
+        img.loading = "eager";
         icon.appendChild(img);
 
         var text = document.createElement("span");
@@ -164,6 +164,7 @@
         img.removeAttribute("srcset");
         img.removeAttribute("sizes");
         img.loading = "eager";
+        img.decoding = "async";
         img.style.opacity = "1";
         img.style.visibility = "visible";
       });
@@ -180,147 +181,165 @@
     return Math.max(min, Math.min(max, value));
   }
 
-  function patchFeaturesSteps() {
-    var section = document.querySelector(".features-steps");
-    if (!section || section.getAttribute("data-gozu-features-patched") === "1") {
-      return;
-    }
+  function parseIndex(value) {
+    var parsed = parseInt(value, 10);
+    return Number.isNaN(parsed) ? -1 : parsed;
+  }
 
+  function getIndexFromCssVar(section, maxIndex) {
     var inner = section.querySelector(".inner");
+    if (!inner) return -1;
+
+    var raw = getComputedStyle(inner).getPropertyValue("--current-item");
+    var index = parseIndex(raw);
+    if (index < 0) return -1;
+    return clamp(index, 0, maxIndex);
+  }
+
+  function getLastShownIndex(scrollItems) {
+    var index = -1;
+    scrollItems.forEach(function (item, i) {
+      if (item.classList.contains("show")) index = i;
+    });
+    return index;
+  }
+
+  function getClosestVisibleIndex(scrollItems, maxIndex) {
+    var viewportCenter = window.innerHeight * 0.5;
+    var bestIndex = 0;
+    var bestDistance = Number.POSITIVE_INFINITY;
+
+    scrollItems.forEach(function (item, i) {
+      var rect = item.getBoundingClientRect();
+      if (rect.height <= 0) return;
+      var center = rect.top + rect.height * 0.5;
+      var distance = Math.abs(center - viewportCenter);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = i;
+      }
+    });
+
+    return clamp(bestIndex, 0, maxIndex);
+  }
+
+  function resolveActiveIndex(section, scrollItems, maxIndex) {
+    var cssIndex = getIndexFromCssVar(section, maxIndex);
+    if (cssIndex >= 0) return cssIndex;
+
+    var shownIndex = getLastShownIndex(scrollItems);
+    if (shownIndex >= 0) return clamp(shownIndex, 0, maxIndex);
+
+    return getClosestVisibleIndex(scrollItems, maxIndex);
+  }
+
+  function syncFeaturesMedia(section) {
     var scrollItems = Array.prototype.slice.call(section.querySelectorAll(".scroll-item"));
     var mediaEls = Array.prototype.slice.call(section.querySelectorAll(".images .media-el"));
     var counterEls = Array.prototype.slice.call(section.querySelectorAll(".counter__mobile"));
-    var buttons = Array.prototype.slice.call(section.querySelectorAll(".buttons .button"));
     var length = Math.min(scrollItems.length, mediaEls.length);
 
     if (!length) return;
 
-    var currentIndex = 0;
-    var wheelLocked = false;
+    var activeIndex = resolveActiveIndex(section, scrollItems, length - 1);
+    section.setAttribute("data-gozu-active-index", String(activeIndex));
 
-    function readCurrentIndex() {
-      var fromItems = scrollItems.findIndex(function (el) {
-        return el.classList.contains("show");
-      });
-      if (fromItems >= 0) return fromItems;
+    counterEls.forEach(function (item, i) {
+      item.classList.toggle("show", i === activeIndex);
+    });
 
-      var fromMedia = mediaEls.findIndex(function (el) {
-        return el.classList.contains("is-visible");
-      });
-      if (fromMedia >= 0) return fromMedia;
+    mediaEls.forEach(function (mediaEl, i) {
+      var isActive = i === activeIndex;
+      mediaEl.classList.toggle("is-visible", isActive);
+      mediaEl.style.opacity = isActive ? "1" : "0";
+      mediaEl.style.visibility = isActive ? "visible" : "hidden";
+      mediaEl.style.pointerEvents = isActive ? "auto" : "none";
+      mediaEl.style.zIndex = isActive ? "2" : "1";
 
-      if (inner) {
-        var raw = parseInt(getComputedStyle(inner).getPropertyValue("--current-item"), 10);
-        if (!Number.isNaN(raw)) return clamp(raw, 0, length - 1);
-      }
+      var video = mediaEl.querySelector("video");
+      if (!video) return;
 
-      return 0;
-    }
+      video.muted = true;
+      video.loop = true;
+      video.playsInline = true;
+      video.preload = "auto";
+      video.setAttribute("playsinline", "");
 
-    function applyIndex(index) {
-      var safeIndex = clamp(index, 0, length - 1);
-      currentIndex = safeIndex;
-
-      if (inner) {
-        inner.style.setProperty("--current-item", String(safeIndex));
-      }
-
-      scrollItems.forEach(function (item, i) {
-        item.classList.toggle("show", i === safeIndex);
-      });
-
-      counterEls.forEach(function (item, i) {
-        item.classList.toggle("show", i === safeIndex);
-      });
-
-      mediaEls.forEach(function (mediaEl, i) {
-        var isActive = i === safeIndex;
-        mediaEl.classList.toggle("is-visible", isActive);
-        mediaEl.style.opacity = isActive ? "1" : "0";
-        mediaEl.style.visibility = isActive ? "visible" : "hidden";
-        mediaEl.style.pointerEvents = isActive ? "auto" : "none";
-
-        var video = mediaEl.querySelector("video");
-        if (!video) return;
-
-        video.muted = true;
-        video.loop = true;
-        video.playsInline = true;
-        video.setAttribute("playsinline", "");
-
-        if (isActive) {
-          var playPromise = video.play();
-          if (playPromise && typeof playPromise.catch === "function") {
-            playPromise.catch(function () {});
-          }
-        } else {
-          video.pause();
+      if (isActive) {
+        if (video.readyState < 2 && typeof video.load === "function") {
+          try {
+            video.load();
+          } catch (_err) {}
         }
-      });
-    }
-
-    function stepBy(delta) {
-      var next = clamp(currentIndex + delta, 0, length - 1);
-      if (next !== currentIndex) {
-        applyIndex(next);
-      }
-    }
-
-    currentIndex = readCurrentIndex();
-    applyIndex(currentIndex);
-
-    if (buttons[0]) {
-      buttons[0].addEventListener("click", function () {
-        stepBy(-1);
-      });
-    }
-    if (buttons[1]) {
-      buttons[1].addEventListener("click", function () {
-        stepBy(1);
-      });
-    }
-
-    section.addEventListener(
-      "wheel",
-      function (event) {
-        var rect = section.getBoundingClientRect();
-        var activeViewport = rect.top < window.innerHeight * 0.85 && rect.bottom > window.innerHeight * 0.15;
-        if (!activeViewport) return;
-        if (Math.abs(event.deltaY) < 4) return;
-        if (wheelLocked) return;
-
-        wheelLocked = true;
-        setTimeout(function () {
-          wheelLocked = false;
-        }, 160);
-
-        stepBy(event.deltaY > 0 ? 1 : -1);
-      },
-      { passive: true }
-    );
-
-    var observer = new MutationObserver(function () {
-      var observedIndex = readCurrentIndex();
-      if (observedIndex !== currentIndex) {
-        applyIndex(observedIndex);
+        var playPromise = video.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+          playPromise.catch(function () {});
+        }
+      } else {
+        video.pause();
       }
     });
+  }
 
-    scrollItems.forEach(function (item) {
-      observer.observe(item, { attributes: true, attributeFilter: ["class"] });
+  function patchFeaturesSteps() {
+    var sections = Array.prototype.slice.call(document.querySelectorAll(".features-steps"));
+    if (!sections.length) return;
+
+    sections.forEach(function (section) {
+      if (section.getAttribute("data-gozu-features-patched") === "1") {
+        return;
+      }
+
+      section.setAttribute("data-gozu-features-patched", "1");
+
+      var rafId = 0;
+      function runSync() {
+        rafId = 0;
+        syncFeaturesMedia(section);
+      }
+
+      function queueSync() {
+        if (rafId) return;
+        rafId = requestAnimationFrame(runSync);
+      }
+
+      queueSync();
+
+      var observer = new MutationObserver(function () {
+        queueSync();
+      });
+
+      observer.observe(section, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["class", "style", "data-state", "aria-current"]
+      });
+
+      var io = new IntersectionObserver(
+        function () {
+          queueSync();
+        },
+        { threshold: [0.2, 0.35, 0.5, 0.65, 0.8] }
+      );
+
+      section.querySelectorAll(".scroll-item").forEach(function (item) {
+        io.observe(item);
+      });
+
+      section.addEventListener("wheel", queueSync, { passive: true });
+      section.addEventListener("scroll", queueSync, { passive: true });
+      window.addEventListener("scroll", queueSync, { passive: true });
+      window.addEventListener("resize", queueSync, { passive: true });
+
+      var warmupRuns = 0;
+      var warmup = setInterval(function () {
+        warmupRuns += 1;
+        queueSync();
+        if (warmupRuns >= 36) {
+          clearInterval(warmup);
+        }
+      }, 350);
     });
-    if (inner) {
-      observer.observe(inner, { attributes: true, attributeFilter: ["style"] });
-    }
-
-    var syncTries = 0;
-    var syncTimer = setInterval(function () {
-      syncTries += 1;
-      applyIndex(readCurrentIndex());
-      if (syncTries >= 30) clearInterval(syncTimer);
-    }, 500);
-
-    section.setAttribute("data-gozu-features-patched", "1");
   }
 
   function applyOverrides() {
@@ -331,7 +350,7 @@
 
   function scheduleApply() {
     var tries = 0;
-    var maxTries = 20;
+    var maxTries = 24;
 
     function run() {
       tries += 1;
